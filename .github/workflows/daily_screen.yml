@@ -1,0 +1,36 @@
+name: Daily Nifty 500 200-DMA Screen
+
+on:
+  schedule:
+    # 17:00 IST = 11:30 UTC. Runs Mon-Fri only (cron is in UTC).
+    - cron: "30 11 * * 1-5"
+  workflow_dispatch: {}   # lets you also trigger it manually from the Actions tab if you ever want to
+
+permissions:
+  contents: write
+
+jobs:
+  run-screener:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run screener
+        run: python screener.py
+
+      - name: Commit and push results
+        run: |
+          git config user.name "screener-bot"
+          git config user.email "actions@github.com"
+          git add results/ index.html
+          git diff --cached --quiet || git commit -m "Daily screen results: $(date +'%Y-%m-%d')"
+          git push
