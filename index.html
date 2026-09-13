@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nifty 500 — 200 DMA Retrace Screen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0E1512;
+    --panel: #131C17;
+    --border: #263229;
+    --text: #E6EFE9;
+    --muted: #7E9689;
+    --up: #5FAE82;
+    --down: #C97B4A;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .criteria {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 28px;
+    max-width: 62ch;
+  }
+  .criteria code {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text);
+    background: var(--panel);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+  .meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .meta span {
+    display: inline-block;
+    margin-right: 24px;
+  }
+  .meta strong { color: var(--text); font-weight: 500; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13.5px;
+  }
+  thead th {
+    text-align: left;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    font-size: 12.5px;
+    color: var(--muted);
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  thead th.num, td.num { text-align: right; }
+  tbody td {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  tbody tr:hover { background: var(--panel); }
+  td.sym {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  td.above { color: var(--up); }
+  td.below { color: var(--down); }
+  td.muted { color: var(--muted); }
+  td.empty {
+    text-align: center;
+    padding: 48px 12px;
+    color: var(--muted);
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  footer {
+    margin-top: 32px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+  @media (max-width: 640px) {
+    thead th:nth-child(5), td:nth-child(5),
+    thead th:nth-child(6), td:nth-child(6) { display: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Nifty 500 — 200 DMA Retrace</h1>
+  <p class="criteria">
+    Stocks that traded at least <code>20%</code> above their 200-day moving average
+    within the last ~6 months, and have since retraced to within <code>5%</code>
+    of the 200 DMA, either side.
+  </p>
+  <div class="meta">
+    <span>Last run: <strong>2026-09-13 13:00 IST</strong></span>
+    <span>Scanned: <strong>501</strong></span>
+    <span>Matches: <strong>32</strong></span>
+    <span>Failed to fetch: <strong>1</strong></span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th class="num">vs 200 DMA</th>
+        <th class="num">Close</th>
+        <th class="num">200 DMA</th>
+        <th class="num">Peak above</th>
+        <th class="num">Peak date</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+            <tr>
+              <td class="sym">AMBER</td>
+              <td class="num above">+0.07%</td>
+              <td class="num">7245.00</td>
+              <td class="num">7239.83</td>
+              <td class="num">+20.65%</td>
+              <td class="num muted">2026-05-07</td>
+            </tr>
+            <tr>
+              <td class="sym">OLECTRA</td>
+              <td class="num below">-0.16%</td>
+              <td class="num">1209.50</td>
+              <td class="num">1211.48</td>
+              <td class="num">+22.70%</td>
+              <td class="num muted">2026-07-02</td>
+            </tr>
+            <tr>
+              <td class="sym">HINDZINC</td>
+              <td class="num below">-0.27%</td>
+              <td class="num">576.45</td>
+              <td class="num">578.00</td>
+              <td class="num">+27.36%</td>
+              <td class="num muted">2026-05-14</td>
+            </tr>
+            <tr>
+              <td class="sym">AIAENG</td>
+              <td class="num below">-0.30%</td>
+              <td class="num">4096.60</td>
+              <td class="num">4108.94</td>
+              <td class="num">+33.67%</td>
+              <td class="num muted">2026-06-30</td>
+            </tr>
+            <tr>
+              <td class="sym">INDIANB</td>
+              <td class="num above">+0.42%</td>
+              <td class="num">853.50</td>
+              <td class="num">849.94</td>
+              <td class="num">+22.88%</td>
+              <td class="num muted">2026-04-10</td>
+            </tr>
+            <tr>
+              <td class="sym">JINDALSTEL</td>
+              <td class="num below">-0.72%</td>
+              <td class="num">1120.50</td>
+              <td class="num">1128.60</td>
+              <td class="num">+21.23%</td>
+              <td class="num muted">2026-04-20</td>
+            </tr>
+            <tr>
+              <td class="sym">HINDCOPPER</td>
+              <td class="num below">-0.84%</td>
+              <td class="num">514.50</td>
+              <td class="num">518.86</td>
+              <td class="num">+44.66%</td>
+              <td class="num muted">2026-04-17</td>
+            </tr>
+            <tr>
+              <td class="sym">NATIONALUM</td>
+              <td class="num below">-0.95%</td>
+              <td class="num">361.00</td>
+              <td class="num">364.47</td>
+              <td class="num">+60.86%</td>
+              <td class="num muted">2026-04-17</td>
+            </tr>
+            <tr>
+              <td class="sym">POLYCAB</td>
+              <td class="num below">-0.98%</td>
+              <td class="num">8241.00</td>
+              <td class="num">8322.47</td>
+              <td class="num">+28.98%</td>
+              <td class="num muted">2026-06-19</td>
+            </tr>
+            <tr>
+              <td class="sym">NMDC</td>
+              <td class="num below">-1.03%</td>
+              <td class="num">82.40</td>
+              <td class="num">83.25</td>
+              <td class="num">+22.42%</td>
+              <td class="num muted">2026-06-03</td>
+            </tr>
+            <tr>
+              <td class="sym">CCL</td>
+              <td class="num above">+1.20%</td>
+              <td class="num">1081.00</td>
+              <td class="num">1068.22</td>
+              <td class="num">+25.50%</td>
+              <td class="num muted">2026-05-07</td>
+            </tr>
+            <tr>
+              <td class="sym">HINDALCO</td>
+              <td class="num above">+1.49%</td>
+              <td class="num">981.50</td>
+              <td class="num">967.05</td>
+              <td class="num">+31.43%</td>
+              <td class="num muted">2026-05-27</td>
+            </tr>
+            <tr>
+              <td class="sym">COALINDIA</td>
+              <td class="num above">+1.60%</td>
+              <td class="num">426.40</td>
+              <td class="num">419.70</td>
+              <td class="num">+21.21%</td>
+              <td class="num muted">2026-04-30</td>
+            </tr>
+            <tr>
+              <td class="sym">TRITURBINE</td>
+              <td class="num above">+1.69%</td>
+              <td class="num">569.65</td>
+              <td class="num">560.20</td>
+              <td class="num">+41.40%</td>
+              <td class="num muted">2026-05-29</td>
+            </tr>
+            <tr>
+              <td class="sym">THERMAX</td>
+              <td class="num below">-1.78%</td>
+              <td class="num">3682.00</td>
+              <td class="num">3748.55</td>
+              <td class="num">+50.37%</td>
+              <td class="num muted">2026-05-29</td>
+            </tr>
+            <tr>
+              <td class="sym">BANDHANBNK</td>
+              <td class="num above">+2.01%</td>
+              <td class="num">176.52</td>
+              <td class="num">173.04</td>
+              <td class="num">+29.96%</td>
+              <td class="num muted">2026-06-16</td>
+            </tr>
+            <tr>
+              <td class="sym">CUMMINSIND</td>
+              <td class="num above">+2.50%</td>
+              <td class="num">5070.00</td>
+              <td class="num">4946.33</td>
+              <td class="num">+36.35%</td>
+              <td class="num muted">2026-05-27</td>
+            </tr>
+            <tr>
+              <td class="sym">DEEPAKFERT</td>
+              <td class="num above">+2.84%</td>
+              <td class="num">1320.40</td>
+              <td class="num">1283.99</td>
+              <td class="num">+29.98%</td>
+              <td class="num muted">2026-07-02</td>
+            </tr>
+            <tr>
+              <td class="sym">GMDCLTD</td>
+              <td class="num below">-2.85%</td>
+              <td class="num">575.35</td>
+              <td class="num">592.22</td>
+              <td class="num">+41.88%</td>
+              <td class="num muted">2026-04-16</td>
+            </tr>
+            <tr>
+              <td class="sym">BSE</td>
+              <td class="num above">+2.99%</td>
+              <td class="num">3384.00</td>
+              <td class="num">3285.72</td>
+              <td class="num">+57.21%</td>
+              <td class="num muted">2026-05-26</td>
+            </tr>
+            <tr>
+              <td class="sym">NSLNISP</td>
+              <td class="num above">+3.12%</td>
+              <td class="num">43.66</td>
+              <td class="num">42.34</td>
+              <td class="num">+25.30%</td>
+              <td class="num muted">2026-06-02</td>
+            </tr>
+            <tr>
+              <td class="sym">ATGL</td>
+              <td class="num below">-3.19%</td>
+              <td class="num">594.80</td>
+              <td class="num">614.41</td>
+              <td class="num">+37.15%</td>
+              <td class="num muted">2026-05-27</td>
+            </tr>
+            <tr>
+              <td class="sym">ENRIN</td>
+              <td class="num above">+3.35%</td>
+              <td class="num">3181.30</td>
+              <td class="num">3078.28</td>
+              <td class="num">+28.14%</td>
+              <td class="num muted">2026-05-29</td>
+            </tr>
+            <tr>
+              <td class="sym">TATACOMM</td>
+              <td class="num above">+3.37%</td>
+              <td class="num">1761.60</td>
+              <td class="num">1704.10</td>
+              <td class="num">+21.90%</td>
+              <td class="num muted">2026-06-22</td>
+            </tr>
+            <tr>
+              <td class="sym">SHRIRAMFIN</td>
+              <td class="num above">+3.44%</td>
+              <td class="num">1028.60</td>
+              <td class="num">994.36</td>
+              <td class="num">+29.50%</td>
+              <td class="num muted">2026-03-18</td>
+            </tr>
+            <tr>
+              <td class="sym">VTL</td>
+              <td class="num above">+3.90%</td>
+              <td class="num">566.20</td>
+              <td class="num">544.93</td>
+              <td class="num">+36.99%</td>
+              <td class="num muted">2026-05-05</td>
+            </tr>
+            <tr>
+              <td class="sym">SAMMAANCAP</td>
+              <td class="num below">-3.96%</td>
+              <td class="num">147.30</td>
+              <td class="num">153.37</td>
+              <td class="num">+22.49%</td>
+              <td class="num muted">2026-06-05</td>
+            </tr>
+            <tr>
+              <td class="sym">TATASTEEL</td>
+              <td class="num below">-4.00%</td>
+              <td class="num">183.00</td>
+              <td class="num">190.62</td>
+              <td class="num">+21.00%</td>
+              <td class="num muted">2026-05-14</td>
+            </tr>
+            <tr>
+              <td class="sym">SUMICHEM</td>
+              <td class="num above">+4.29%</td>
+              <td class="num">476.40</td>
+              <td class="num">456.82</td>
+              <td class="num">+24.82%</td>
+              <td class="num muted">2026-08-14</td>
+            </tr>
+            <tr>
+              <td class="sym">PHOENIXLTD</td>
+              <td class="num above">+4.58%</td>
+              <td class="num">1890.00</td>
+              <td class="num">1807.23</td>
+              <td class="num">+23.34%</td>
+              <td class="num muted">2026-07-13</td>
+            </tr>
+            <tr>
+              <td class="sym">KEI</td>
+              <td class="num below">-4.82%</td>
+              <td class="num">4578.00</td>
+              <td class="num">4810.04</td>
+              <td class="num">+26.94%</td>
+              <td class="num muted">2026-06-17</td>
+            </tr>
+            <tr>
+              <td class="sym">NAVA</td>
+              <td class="num below">-4.98%</td>
+              <td class="num">551.85</td>
+              <td class="num">580.77</td>
+              <td class="num">+21.64%</td>
+              <td class="num muted">2026-05-11</td>
+            </tr>
+    </tbody>
+  </table>
+  <footer>Runs automatically on weekdays after market close. Data via Yahoo Finance, not investment advice.</footer>
+</main>
+</body>
+</html>
