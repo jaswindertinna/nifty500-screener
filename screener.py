@@ -32,6 +32,10 @@ BATCH_SIZE = 50            # tickers per yfinance batch download
 BATCH_SLEEP_SEC = 3        # pause between batches to avoid rate limiting
 RETRY_ATTEMPTS = 3
 
+RSI_PERIOD = 14             # standard RSI lookback
+DIVERGENCE_WINDOW_DAYS = 90  # only look for swing lows within this recent window
+PIVOT_ORDER = 5              # bars on each side that must be higher for a swing low
+
 NIFTY500_CSV_URL = "https://nsearchives.nseindia.com/content/indices/ind_nifty500list.csv"
 FALLBACK_LIST_PATH = Path(__file__).parent / "nifty500_fallback.csv"
 
@@ -143,8 +147,63 @@ def evaluate_stock(close: pd.Series) -> dict | None:
     }
 
 
-def render_html(df: pd.DataFrame, run_date: str, run_time: str, scanned: int, failed: int) -> str:
-    """Render the day's results as a static, self-contained HTML page."""
+def compute_rsi(close: pd.Series, period: int = RSI_PERIOD) -> pd.Series:
+    """Standard Wilder's-smoothed RSI."""
+    delta = close.diff()
+    gain = delta.clip(lower=0)
+    loss = -delta.clip(upper=0)
+    avg_gain = gain.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1 / period, min_periods=period, adjust=False).mean()
+    rs = avg_gain / avg_loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+
+def find_pivot_lows(series: pd.Series, order: int = PIVOT_ORDER) -> list:
+    """Return the index labels of local minima: a point lower than every
+    point in `order` bars on both sides of it."""
+    vals = series.values
+    pivots = []
+    for i in range(order, len(vals) - order):
+        window = vals[i - order : i + order + 1]
+        if vals[i] == window.min() and (window == vals[i]).sum() == 1:
+            pivots.append(series.index[i])
+    return pivots
+
+
+def detect_bullish_rsi_divergence(close: pd.Series, rsi: pd.Series) -> dict | None:
+    """Bullish divergence: the most recent swing low in price is LOWER than
+    the prior swing low, while RSI at that same point is HIGHER than at the
+    prior swing low — momentum improving even as price makes a new low."""
+    combined = pd.DataFrame({"close": close, "rsi": rsi}).dropna()
+    if len(combined) < PIVOT_ORDER * 2 + 30:
+        return None
+
+    recent = combined.iloc[-DIVERGENCE_WINDOW_DAYS:] if len(combined) > DIVERGENCE_WINDOW_DAYS else combined
+    pivot_dates = find_pivot_lows(recent["close"], order=PIVOT_ORDER)
+    if len(pivot_dates) < 2:
+        return None
+
+    d1, d2 = pivot_dates[-2], pivot_dates[-1]  # earlier low, later (more recent) low
+    price1, price2 = recent.loc[d1, "close"], recent.loc[d2, "close"]
+    rsi1, rsi2 = recent.loc[d1, "rsi"], recent.loc[d2, "rsi"]
+
+    if price2 < price1 and rsi2 > rsi1:
+        return {
+            "low1_date": d1.strftime("%Y-%m-%d") if hasattr(d1, "strftime") else str(d1),
+            "low1_price": round(float(price1), 2),
+            "low1_rsi": round(float(rsi1), 1),
+            "low2_date": d2.strftime("%Y-%m-%d") if hasattr(d2, "strftime") else str(d2),
+            "low2_price": round(float(price2), 2),
+            "low2_rsi": round(float(rsi2), 1),
+        }
+    return None
+
+
+def render_html(df: pd.DataFrame, div_df: pd.DataFrame, run_date: str, run_time: str, scanned: int, failed: int) -> str:
+    """Render the day's results as a static, self-contained HTML page.
+    Two independent sections: the 200DMA retrace list, and — scanned only
+    within those same matches — which ones also show bullish RSI divergence."""
     if df.empty:
         rows_html = (
             '<tr><td colspan="6" class="empty">No stocks matched today\'s criteria.</td></tr>'
@@ -165,6 +224,23 @@ def render_html(df: pd.DataFrame, run_date: str, run_time: str, scanned: int, fa
               <td class="num muted">{r['peak_date']}</td>
             </tr>""")
         rows_html = "".join(row_parts)
+
+    if div_df.empty:
+        div_rows_html = (
+            '<tr><td colspan="5" class="empty">None of today\'s matches show bullish RSI divergence.</td></tr>'
+        )
+    else:
+        div_row_parts = []
+        for _, r in div_df.iterrows():
+            div_row_parts.append(f"""
+            <tr>
+              <td class="sym">{r['symbol']}</td>
+              <td class="num muted">{r['low1_date']}<br><span class="submeta">{r['low1_price']:.2f} · RSI {r['low1_rsi']:.1f}</span></td>
+              <td class="num muted">{r['low2_date']}<br><span class="submeta">{r['low2_price']:.2f} · RSI {r['low2_rsi']:.1f}</span></td>
+              <td class="num below">{r['low2_price'] - r['low1_price']:+.2f}</td>
+              <td class="num above">{r['low2_rsi'] - r['low1_rsi']:+.1f}</td>
+            </tr>""")
+        div_rows_html = "".join(div_row_parts)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -203,11 +279,22 @@ def render_html(df: pd.DataFrame, run_date: str, run_time: str, scanned: int, fa
     margin: 0 0 6px;
     letter-spacing: -0.01em;
   }}
+  h2 {{
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }}
+  section {{ margin-bottom: 44px; }}
+  section + section {{
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }}
   .criteria {{
     color: var(--muted);
     font-size: 14px;
     line-height: 1.6;
-    margin: 0 0 28px;
+    margin: 0 0 20px;
     max-width: 62ch;
   }}
   .criteria code {{
@@ -262,52 +349,79 @@ def render_html(df: pd.DataFrame, run_date: str, run_time: str, scanned: int, fa
   td.above {{ color: var(--up); }}
   td.below {{ color: var(--down); }}
   td.muted {{ color: var(--muted); }}
+  .submeta {{ color: var(--muted); font-size: 11.5px; }}
   td.empty {{
     text-align: center;
-    padding: 48px 12px;
+    padding: 40px 12px;
     color: var(--muted);
     font-family: 'IBM Plex Sans', sans-serif;
   }}
   footer {{
-    margin-top: 32px;
+    margin-top: 8px;
     color: var(--muted);
     font-size: 12.5px;
   }}
   @media (max-width: 640px) {{
-    thead th:nth-child(5), td:nth-child(5),
-    thead th:nth-child(6), td:nth-child(6) {{ display: none; }}
+    #retrace-table thead th:nth-child(5), #retrace-table td:nth-child(5),
+    #retrace-table thead th:nth-child(6), #retrace-table td:nth-child(6) {{ display: none; }}
   }}
 </style>
 </head>
 <body>
 <main>
-  <h1>Nifty 500 — 200 DMA Retrace</h1>
-  <p class="criteria">
-    Stocks that traded at least <code>20%</code> above their 200-day moving average
-    within the last ~6 months, and have since retraced to within <code>5%</code>
-    of the 200 DMA, either side.
-  </p>
   <div class="meta">
     <span>Last run: <strong>{run_date} {run_time} IST</strong></span>
     <span>Scanned: <strong>{scanned}</strong></span>
-    <span>Matches: <strong>{len(df)}</strong></span>
     <span>Failed to fetch: <strong>{failed}</strong></span>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Symbol</th>
-        <th class="num">vs 200 DMA</th>
-        <th class="num">Close</th>
-        <th class="num">200 DMA</th>
-        <th class="num">Peak above</th>
-        <th class="num">Peak date</th>
-      </tr>
-    </thead>
-    <tbody>
-      {rows_html}
-    </tbody>
-  </table>
+
+  <section>
+    <h1>200 DMA Retrace</h1>
+    <p class="criteria">
+      Stocks that traded at least <code>20%</code> above their 200-day moving average
+      within the last ~6 months, and have since retraced to within <code>5%</code>
+      of the 200 DMA, either side. <strong>{len(df)}</strong> match{'es' if len(df) != 1 else ''}.
+    </p>
+    <table id="retrace-table">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th class="num">vs 200 DMA</th>
+          <th class="num">Close</th>
+          <th class="num">200 DMA</th>
+          <th class="num">Peak above</th>
+          <th class="num">Peak date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows_html}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Bullish RSI Divergence</h2>
+    <p class="criteria">
+      Among the matches above only: price made a lower swing low while RSI({RSI_PERIOD})
+      made a higher low over the same two points — momentum improving even as
+      price fell further. <strong>{len(div_df)}</strong> match{'es' if len(div_df) != 1 else ''}.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th class="num">Swing low 1</th>
+          <th class="num">Swing low 2</th>
+          <th class="num">Price Δ</th>
+          <th class="num">RSI Δ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {div_rows_html}
+      </tbody>
+    </table>
+  </section>
+
   <footer>Runs automatically on weekdays after market close. Data via Yahoo Finance, not investment advice.</footer>
 </main>
 </body>
@@ -323,6 +437,7 @@ def main():
 
     matches = []
     errors = []
+    close_cache = {}  # symbol -> close series, kept only for stocks that matched filter 1
 
     for i in range(0, len(yf_tickers), BATCH_SIZE):
         batch = yf_tickers[i : i + BATCH_SIZE]
@@ -345,8 +460,10 @@ def main():
                     close = data[ticker]["Close"]
                 result = evaluate_stock(close)
                 if result:
-                    result["symbol"] = ticker.replace(".NS", "")
+                    symbol = ticker.replace(".NS", "")
+                    result["symbol"] = symbol
                     matches.append(result)
+                    close_cache[symbol] = close  # keep for the divergence pass below
             except Exception as e:
                 errors.append(ticker)
 
@@ -363,26 +480,55 @@ def main():
             "peak_pct_above_200dma", "peak_date"
         ])
 
+    # --- Second, independent filter: bullish RSI divergence — but only run
+    # it against the stocks that already passed the 200DMA retrace filter.
+    divergence_matches = []
+    for symbol, close in close_cache.items():
+        rsi = compute_rsi(close)
+        div = detect_bullish_rsi_divergence(close, rsi)
+        if div:
+            div["symbol"] = symbol
+            divergence_matches.append(div)
+
+    if divergence_matches:
+        div_df = pd.DataFrame(divergence_matches)[
+            ["symbol", "low1_date", "low1_price", "low1_rsi", "low2_date", "low2_price", "low2_rsi"]
+        ].sort_values("symbol")
+    else:
+        div_df = pd.DataFrame(columns=[
+            "symbol", "low1_date", "low1_price", "low1_rsi", "low2_date", "low2_price", "low2_rsi"
+        ])
+
     dated_path = OUTPUT_DIR / f"{run_date}.csv"
     latest_path = OUTPUT_DIR / "latest.csv"
     out_df.to_csv(dated_path, index=False)
     out_df.to_csv(latest_path, index=False)
 
+    div_dated_path = OUTPUT_DIR / f"{run_date}_rsi_divergence.csv"
+    div_latest_path = OUTPUT_DIR / "latest_rsi_divergence.csv"
+    div_df.to_csv(div_dated_path, index=False)
+    div_df.to_csv(div_latest_path, index=False)
+
     run_time = dt.datetime.now().strftime("%H:%M")
-    html = render_html(out_df, run_date, run_time, scanned=len(symbols), failed=len(errors))
+    html = render_html(out_df, div_df, run_date, run_time, scanned=len(symbols), failed=len(errors))
     html_path = Path(__file__).parent / "index.html"
     html_path.write_text(html, encoding="utf-8")
     print(f"Saved: {html_path}")
 
     print(f"\nMatches found: {len(out_df)}")
+    print(f"Of those, bullish RSI divergence: {len(div_df)}")
     print(f"Tickers that failed to download/process: {len(errors)}")
     if errors:
         print("  " + ", ".join(errors[:20]) + (" ..." if len(errors) > 20 else ""))
     print(f"\nSaved: {dated_path}")
     print(f"Saved: {latest_path}")
+    print(f"Saved: {div_dated_path}")
+    print(f"Saved: {div_latest_path}")
 
     if not out_df.empty:
         print("\n" + out_df.to_string(index=False))
+    if not div_df.empty:
+        print("\n--- Bullish RSI divergence ---\n" + div_df.to_string(index=False))
 
 
 if __name__ == "__main__":
