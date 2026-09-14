@@ -35,11 +35,22 @@
     margin: 0 0 6px;
     letter-spacing: -0.01em;
   }
+  h2 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  section { margin-bottom: 44px; }
+  section + section {
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
   .criteria {
     color: var(--muted);
     font-size: 14px;
     line-height: 1.6;
-    margin: 0 0 28px;
+    margin: 0 0 20px;
     max-width: 62ch;
   }
   .criteria code {
@@ -94,50 +105,52 @@
   td.above { color: var(--up); }
   td.below { color: var(--down); }
   td.muted { color: var(--muted); }
+  .submeta { color: var(--muted); font-size: 11.5px; }
   td.empty {
     text-align: center;
-    padding: 48px 12px;
+    padding: 40px 12px;
     color: var(--muted);
     font-family: 'IBM Plex Sans', sans-serif;
   }
   footer {
-    margin-top: 32px;
+    margin-top: 8px;
     color: var(--muted);
     font-size: 12.5px;
   }
   @media (max-width: 640px) {
-    thead th:nth-child(5), td:nth-child(5),
-    thead th:nth-child(6), td:nth-child(6) { display: none; }
+    #retrace-table thead th:nth-child(5), #retrace-table td:nth-child(5),
+    #retrace-table thead th:nth-child(6), #retrace-table td:nth-child(6) { display: none; }
   }
 </style>
 </head>
 <body>
 <main>
-  <h1>Nifty 500 — 200 DMA Retrace</h1>
-  <p class="criteria">
-    Stocks that traded at least <code>20%</code> above their 200-day moving average
-    within the last ~6 months, and have since retraced to within <code>5%</code>
-    of the 200 DMA, either side.
-  </p>
   <div class="meta">
-    <span>Last run: <strong>2026-09-13 13:00 IST</strong></span>
+    <span>Last run: <strong>2026-09-14 04:11 IST</strong></span>
     <span>Scanned: <strong>501</strong></span>
-    <span>Matches: <strong>32</strong></span>
     <span>Failed to fetch: <strong>1</strong></span>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Symbol</th>
-        <th class="num">vs 200 DMA</th>
-        <th class="num">Close</th>
-        <th class="num">200 DMA</th>
-        <th class="num">Peak above</th>
-        <th class="num">Peak date</th>
-      </tr>
-    </thead>
-    <tbody>
-      
+
+  <section>
+    <h1>200 DMA Retrace</h1>
+    <p class="criteria">
+      Stocks that traded at least <code>20%</code> above their 200-day moving average
+      within the last ~6 months, and have since retraced to within <code>5%</code>
+      of the 200 DMA, either side. <strong>32</strong> matches.
+    </p>
+    <table id="retrace-table">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th class="num">vs 200 DMA</th>
+          <th class="num">Close</th>
+          <th class="num">200 DMA</th>
+          <th class="num">Peak above</th>
+          <th class="num">Peak date</th>
+        </tr>
+      </thead>
+      <tbody>
+        
             <tr>
               <td class="sym">AMBER</td>
               <td class="num above">+0.07%</td>
@@ -394,8 +407,54 @@
               <td class="num">+21.64%</td>
               <td class="num muted">2026-05-11</td>
             </tr>
-    </tbody>
-  </table>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Bullish RSI Divergence</h2>
+    <p class="criteria">
+      Among the matches above only: price made a lower swing low while RSI(14)
+      made a higher low over the same two points — momentum improving even as
+      price fell further. <strong>3</strong> matches.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th class="num">Swing low 1</th>
+          <th class="num">Swing low 2</th>
+          <th class="num">Price Δ</th>
+          <th class="num">RSI Δ</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+            <tr>
+              <td class="sym">BSE</td>
+              <td class="num muted">2026-08-21<br><span class="submeta">3241.00 · RSI 31.8</span></td>
+              <td class="num muted">2026-09-02<br><span class="submeta">3168.00 · RSI 33.3</span></td>
+              <td class="num below">-73.00</td>
+              <td class="num above">+1.5</td>
+            </tr>
+            <tr>
+              <td class="sym">CCL</td>
+              <td class="num muted">2026-08-04<br><span class="submeta">1118.88 · RSI 34.4</span></td>
+              <td class="num muted">2026-08-31<br><span class="submeta">1076.80 · RSI 36.1</span></td>
+              <td class="num below">-42.08</td>
+              <td class="num above">+1.7</td>
+            </tr>
+            <tr>
+              <td class="sym">ENRIN</td>
+              <td class="num muted">2026-07-30<br><span class="submeta">3121.70 · RSI 33.2</span></td>
+              <td class="num muted">2026-09-04<br><span class="submeta">3115.70 · RSI 33.8</span></td>
+              <td class="num below">-6.00</td>
+              <td class="num above">+0.6</td>
+            </tr>
+      </tbody>
+    </table>
+  </section>
+
   <footer>Runs automatically on weekdays after market close. Data via Yahoo Finance, not investment advice.</footer>
 </main>
 </body>
